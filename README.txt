@@ -1,1 +1,0 @@
-Upload index.html, manifest.webmanifest and sw.js. Header should show v0.8.8 and no longer clip its subtitle.
