@@ -1,0 +1,10 @@
+{
+  "name":"FARMPro Survey",
+  "short_name":"FARMPro",
+  "description":"Farm Productivity Assessment System - BSWM ALMED",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "background_color":"#f4f8f5",
+  "theme_color":"#087443"
+}
