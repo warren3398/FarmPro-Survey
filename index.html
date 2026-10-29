@@ -14,6 +14,10 @@
 .fpLogoHead{display:block;width:64px;height:64px;object-fit:contain;margin-right:10px;border-radius:10px;background:transparent}
 .fpBrandWrap{display:flex;align-items:center}
 @media(max-width:560px){.fpLogoLogin{width:min(220px,70vw)}.fpLogoHead{width:52px;height:52px}}
+
+/* Compact mobile-safe header */
+header.fpSimpleHeader{height:58px!important;min-height:58px!important;padding:10px 16px!important;display:flex!important;align-items:center!important;overflow:hidden!important;position:relative!important}
+.fpSimpleTitle{font-size:21px;font-weight:850;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
 </style><style id="farmpro-mobile-v086">
 html,body{width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%!important}*,*:before,*:after{box-sizing:border-box}
 input,select,textarea{font-size:16px!important;line-height:1.25!important;max-width:100%!important;min-width:0!important}input[type=date]{width:100%!important;min-width:0!important;max-width:100%!important;-webkit-appearance:none;appearance:none}button{touch-action:manipulation}
@@ -100,8 +104,7 @@ h2,h3{color:#124c37!important}
  </div>
 </section>
 <div id="appShell" class="hidden">
-<header><div class="fpBrandWrap"><div><div class="brand">FARMPro <span class="fpVersion">v0.8.9</span></div><div class="sub">Farm Productivity Assessment</div>
-<div class="sub" style="margin-top:2px">Bureau of Soil and Water Management • Agricultural Land Management and Evaluation Division</div></div></div></header><main class="wrap"><section id="menu">
+<header class="fpSimpleHeader"><div class="fpSimpleTitle">FARMPro Survey</div></header><main class="wrap"><section id="menu">
 <div class="card">
  <div class="toprow"><div><b id="who">Enumerator</b><div class="mini" id="onlineState">Checking connection…</div></div><button type="button" class="secondary" onclick="logout()">Logout</button></div>
  <div class="statusbar"><span class="status" id="saveState">No active interview</span><span class="status" id="syncState">0 pending sync</span></div><div class="mini" style="margin-top:5px;color:#176b46;font-weight:700">☁ Central Database: FARMPro Supabase Connected</div>
