@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FARMPro Admin Reports</title><style>
+:root{font-family:system-ui,Arial;color:#163b2b;background:#f5f8f6}*{box-sizing:border-box}body{margin:0}header{background:#087a4d;color:white;padding:18px 22px}main{max-width:1150px;margin:auto;padding:20px}.card{background:white;border:1px solid #dce7e0;border-radius:14px;padding:18px;margin-bottom:15px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.num{font-size:30px;font-weight:800}input,button,select{padding:11px;border:1px solid #bcd1c4;border-radius:9px;font:inherit}button{background:#087a4d;color:white;cursor:pointer}button:disabled{opacity:.5}input{max-width:100%;width:330px}label{display:block;margin:10px 0 5px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:10px;border-bottom:1px solid #e1e9e4;text-align:left}th{background:#f2f7f4}#tableWrap{overflow:auto}.muted{color:#667b6e}.error{color:#a11b1b}a{color:inherit}.actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}</style></head><body><header><strong>FARMPro Survey — Admin Dashboard</strong></header><main>
+<section class="card" id="loginPanel"><h2>Administrator sign in</h2><p class="muted">Use your verified Supabase administrator account. Survey enumerator passwords do not work here.</p><form id="loginForm"><label>Email</label><input type="email" id="email" autocomplete="username" required value="delrosariowarren.3398@gmail.com"><label>Password</label><input type="password" id="password" autocomplete="current-password" required><div class="actions"><button type="submit">Sign in</button></div></form><p id="loginMsg" role="status"></p></section>
+<section id="dashboard" hidden><div class="actions"><button id="refresh">Refresh data</button><button id="export">Download CSV report</button><button id="logout">Sign out</button><a href="./">Back to survey</a></div><p id="status" role="status"></p><div class="grid" id="metrics"></div><section class="card"><h2>Crop-level cost and return report</h2><p class="muted">Values are computed from synchronized submission raw data. Empty ratios indicate zero denominator.</p><label for="municipality">Filter by municipality</label><select id="municipality"><option value="">All municipalities</option></select><div id="tableWrap"></div></section></section></main>
+<script type="module">
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.49.10';
+const supabase=createClient('https://mztgzswqjkjsqllwmmtf.supabase.co','sb_publishable_tsdXRlwESHukN0PezxMtQQ_xsfByNrQ');
+const $=id=>document.getElementById(id);let report=[];const columns=['submission_id','survey_date','province','municipality','barangay','enumerator_id','farmer_name','crop_name','area_ha','production_kg','farmgate_price','gross_income','material_cost','labor_cost','machinery_cost','total_cost','net_income','yield_kg_per_ha','benefit_cost_ratio','cost_per_kg'];
+const escapeHtml=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function show(logged){$('loginPanel').hidden=logged;$('dashboard').hidden=!logged}
+async function load(){
+ $('status').textContent='Loading central database...';$('status').className='';
+ const {data:dash,error:e1}=await supabase.from('farmpro_submission_dashboard').select('*').single();
+ if(e1)throw e1;
+ let rows=[],from=0;
+ while(true){const {data,error}=await supabase.from('farmpro_submission_report').select(columns.join(',')).order('submission_id',{ascending:true}).range(from,from+999);if(error)throw error;rows.push(...data);if(data.length<1000)break;from+=1000;if(from>=100000)throw Error('Report exceeds 100,000 rows. Contact administrator for paginated export.')}
+ report=rows;
+ const items=[['Total submissions',dash.total_submissions],['Today',dash.submissions_today],['Municipalities',dash.municipalities],['Enumerators',dash.enumerators],['Crop records',report.length],['Validated',dash.validated_submissions]];
+ $('metrics').innerHTML=items.map(([a,b])=>'<div class="card"><div class="muted">'+escapeHtml(a)+'</div><div class="num">'+escapeHtml(b)+'</div></div>').join('');
+ const choices=[...new Set(report.map(r=>r.municipality).filter(Boolean))].sort();$('municipality').innerHTML='<option value="">All municipalities</option>'+choices.map(x=>'<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>').join('');
+ render();$('status').textContent='Last refreshed: '+new Date().toLocaleString();
+}
+function filtered(){return report.filter(r=>!$('municipality').value||r.municipality===$('municipality').value)}
+function render(){const rows=filtered();$('tableWrap').innerHTML='<table><thead><tr>'+columns.map(x=>'<th>'+escapeHtml(x.replaceAll('_',' '))+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+columns.map(k=>'<td>'+escapeHtml(r[k])+'</td>').join('')+'</tr>').join('')+'</tbody></table>';if(!rows.length)$('tableWrap').textContent='No report rows for this selection.'}
+function csvCell(x){let v=String(x??'');if(/^[=+@\-\t\r]/.test(v))v="'"+v;return '"'+v.replaceAll('"','""')+'"'}
+$('export').onclick=()=>{const csv='\uFEFF'+[columns.join(','),...filtered().map(r=>columns.map(k=>csvCell(r[k])).join(','))].join('\r\n');const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=url;a.download='FARMPro_Cost_Return_Report_'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+$('municipality').onchange=render;
+$('loginForm').onsubmit=async e=>{e.preventDefault();$('loginMsg').textContent='Signing in...';const {error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMsg').textContent=error.message;return}await init()};
+$('logout').onclick=async()=>{await supabase.auth.signOut();report=[];show(false)};
+$('refresh').onclick=async()=>{try{await load()}catch(e){$('status').textContent=e.message;$('status').className='error'}};
+async function init(){const {data}=await supabase.auth.getUser();if(!data?.user){show(false);return}show(true);try{await load()}catch(e){$('status').textContent='Access denied or reporting unavailable: '+e.message;$('status').className='error'}}
+init();
+</script></body></html>
