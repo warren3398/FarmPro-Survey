@@ -96,9 +96,8 @@ h2,h3{color:#124c37!important}
 <section id="loginScreen" class="loginShell">
  <div class="loginCard"><div style="text-align:center;margin-bottom:18px"><h2 style="margin:5px">FARMPro Survey</h2><div class="mini">Bureau of Soil and Water Management</div>
 <div class="mini" style="font-weight:700;color:#176b46;margin-top:3px">Agricultural Land Management and Evaluation Division</div>
-<div class="mini" style="margin-top:7px">Authorized Enumerators Only</div></div>
- <label>Username</label><input id="loginUser" autocomplete="username" placeholder="Enumerator username">
- <label>Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="Password">
+<div class="mini" style="margin-top:7px">Select your enumerator profile to continue</div></div>
+ <label>Enumerator</label><select id="loginUser"><option value="">Select enumerator</option><option value="enumerator01">Enumerator 01</option><option value="enumerator02">Enumerator 02</option><option value="enumerator03">Enumerator 03</option><option value="enumerator04">Enumerator 04</option><option value="enumerator05">Enumerator 05</option><option value="enumerator06">Enumerator 06</option><option value="enumerator07">Enumerator 07</option><option value="enumerator08">Enumerator 08</option><option value="enumerator09">Enumerator 09</option><option value="enumerator10">Enumerator 10</option></select>
  <button type="button" class="primary" style="width:100%;margin-top:14px" onclick="login()">Login</button>
  <div id="loginMsg" class="mini" style="margin-top:10px;text-align:center"></div>
  </div>
@@ -459,7 +458,7 @@ function legacyExportQueue(){let q=JSON.parse(localStorage.fpQueue||'[]');if(!q.
 calc();renderPage();
 
 /* ===== FARMPro v0.6 Offline-Safe Engine ===== */
-const FP_ACCOUNTS=Array.from({length:10},(_,i)=>({username:`enumerator${String(i+1).padStart(2,'0')}`,password:`FarmPro${String(i+1).padStart(2,'0')}`,name:`Enumerator ${String(i+1).padStart(2,'0')}`}));
+const FP_ACCOUNTS=Array.from({length:10},(_,i)=>({username:`enumerator${String(i+1).padStart(2,'0')}`,name:`Enumerator ${String(i+1).padStart(2,'0')}`}));
 let currentUser=null, activeDraftId=null, autoSaveTimer=null, db=null;
 function uid(prefix='FP'){return prefix+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8).toUpperCase()}
 function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open('FarmProOfflineDB',1);q.onupgradeneeded=e=>{let d=e.target.result;if(!d.objectStoreNames.contains('records')){let s=d.createObjectStore('records',{keyPath:'id'});s.createIndex('owner','owner');s.createIndex('status','status')}};q.onsuccess=e=>{db=e.target.result;res(db)};q.onerror=()=>rej(q.error)})}
@@ -469,11 +468,11 @@ function allRec(){return new Promise((res,rej)=>{let q=db.transaction('records')
 function delRec(id){return new Promise((res,rej)=>{let q=db.transaction('records','readwrite').objectStore('records').delete(id);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function login(){
- let u=$('loginUser').value.trim().toLowerCase(),p=$('loginPass').value,a=FP_ACCOUNTS.find(x=>x.username===u&&x.password===p);
- if(!a){$('loginMsg').textContent='Invalid username or password.';return}
+ let u=$('loginUser').value.trim().toLowerCase(),a=FP_ACCOUNTS.find(x=>x.username===u);
+ if(!a){$('loginMsg').textContent='Please select your enumerator profile.';return}
  currentUser=a;sessionStorage.fpUser=a.username;$('loginScreen').classList.add('hidden');$('appShell').classList.remove('hidden');$('who').textContent=a.name;$('enumerator').value=a.name;home();updateDashboard();syncPending(false)
 }
-function logout(){currentUser=null;activeDraftId=null;sessionStorage.removeItem('fpUser');$('appShell').classList.add('hidden');$('loginScreen').classList.remove('hidden');$('loginPass').value=''}
+function logout(){currentUser=null;activeDraftId=null;sessionStorage.removeItem('fpUser');$('appShell').classList.add('hidden');$('loginScreen').classList.remove('hidden');$('loginUser').value=''}
 async function boot(){await openDB();await requestPersistentStorage();let u=sessionStorage.fpUser,a=FP_ACCOUNTS.find(x=>x.username===u);if(a){currentUser=a;$('loginScreen').classList.add('hidden');$('appShell').classList.remove('hidden');$('who').textContent=a.name;$('enumerator').value=a.name;home();await updateDashboard();syncPending(false)} updateOnline();window.addEventListener('online',()=>{updateOnline();syncPending(false)});window.addEventListener('offline',updateOnline)}
 function updateOnline(){let e=$('onlineState');if(!e)return;e.textContent=navigator.onLine?'● Online • auto-sync enabled':'● Offline • records saved on this device';e.style.color=navigator.onLine?'#087a4d':'#9a6500'}
 function snapshotForm(){
